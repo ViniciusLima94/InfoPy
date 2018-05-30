@@ -150,6 +150,7 @@ def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 	I: Mutual information.
 	'''
 	from scipy.special import digamma
+	from sklearn.neighbors import NearestNeighbors
 
 	N = len(x)
 
@@ -162,13 +163,10 @@ def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 		x = (x - np.mean(x))/np.std(x)
 		y = (y - np.mean(y))/np.std(y)
 
-	distances = np.zeros(N)
-	for i in range(0, N):
-		d = []
-		for j in range(0, N):
-			dX, dY = np.abs(x[i]-x[j]), np.abs(y[i]-y[j])
-			d.append( max( dX, dY ) )
-		distances[i] = np.sort(d)[k]
+	Z = np.squeeze( zip(x[:, None],y[:, None]) )
+	nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree', metric='chebyshev').fit(Z)
+	distances, _ = nbrs.kneighbors(Z)
+	distances = distances[:, k]
 
  	nx = np.zeros(N)
  	ny = np.zeros(N)
@@ -179,7 +177,7 @@ def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
  	I = digamma(k) - np.mean( digamma(nx) + digamma(ny)  ) + digamma(N)
  	return I
 
-def delayedKSGMI(x, y, k = 3, delay = 0):
+def delayedKSGMI(x, y, k = 3, base = 2, delay = 0):
 	'''
 	Description: Computes the delayed mutual information using the KSG estimator (see method KSGestimator_Multivariate).
 	Inputs:
@@ -197,3 +195,19 @@ def delayedKSGMI(x, y, k = 3, delay = 0):
 		x = x[:-delay]
 		y = y[delay:]
 	return KSGestimator_Multivariate(x, y, k = k)
+
+r'''
+	MUTUAL INFORMATION (USING KSG ESTIMATOR) BETWEEN THE HEART FREQUENCY AND CHEST VOLUME
+'''
+# Read in the data
+rawData = pd.read_csv('data.txt', header = None, delimiter = ',')
+# As numpy array:
+# Heart rate is first column, and we restrict to the samples that Schreiber mentions (2350:3550)
+x = rawData[0].values # Extracts what Matlab does with 2350:3550 argument there.
+# Chest vol is second column
+y = rawData[1].values
+# bloodOx = data[2349:3550,2];
+bloodOx = rawData[2].values
+timeSteps = len(x);
+
+I = KSGestimator_Multivariate(x, y, k = 4)
