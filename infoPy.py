@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.spatial as ss
 from math import log,pi,exp
+from sklearn.neighbors import NearestNeighbors
 
 def BinNeuronEntropy(SpikeTrain):
 	r'''
@@ -135,63 +136,64 @@ def binTransferEntropy(x, y, delay):
 					continue
 	return TE
 
-def KSGcountings(x, distances):
-	'''
-	Description: Computes the mean of the digamma functions of the countings as described in Kraskov et. al. (2004), 
-	see Eq. 8 in the original paper.
-	Inputs:
-	X: List with values with one signal
-	disatnces: vector of distances (see method KSGestimator_Multivariate)
-	Output:
-	avg: Mean digamma functions of the countings.
-	'''
-	from scipy.special import digamma
 
-	N = len(x)
-	tree = ss.cKDTree(x)
-	avg  = 0
-	for i in range(N):
-		Nc = len(tree.query_ball_point(x[i], distances[i] - 1e-15, p=float('inf')))
-		if Nc > 0:
-			avg += digamma(Nc) / float(N)
-	return avg
-
-def KSGestimator_Multivariate(X, k = 3, base = 2):
+def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 	'''
 	Description: Computes mutual information using the KSG estimator (for more information see Kraskov et. al 2004).
 	Inputs:
 	X: Array with the signals.
 	k: Number of nearest neighbors.
 	base: Log base (2 for unit bits)
+	norm: Whether to normalize or not the data
+	noiseLevel: Level of noise added to the data to break degeneracy
 	Output:
-	I / log(base): Mutual information (if base=2 in bits, if base=e in nats) 
+	I: Mutual information.
 	'''
 	from scipy.special import digamma
 
-	N = len(X[0])
-	m = len(X)
-	Z = ZIP(X)
-	tree = ss.cKDTree(Z)
-	# Find nearest neighbors in joint space, p=inf means max-norm
-	distances = [tree.query(z, k + 1, p=float('inf'))[0][k] for z in Z]
-	I = 0
-	for i in range(m):
-		I -= KSGcountings(X[i], distances)
-	I = I + digamma(k) + (m-1)*digamma(N)
- 	return I / log(base)
+	N = len(x)
 
-def ZIP(X):
+	# Add noise to the data to break degeneracy
+	x = x + 1e-8*np.random.randn(N)
+	y = y + 1e-8*np.random.randn(N)
+
+	# Normalizing data
+	if norm == True:
+		x = (x - np.mean(x))/np.std(x)
+		y = (y - np.mean(y))/np.std(y)
+
+	distances = np.zeros(N)
+	for i in range(0, N):
+		d = []
+		for j in range(0, N):
+			dX, dY = np.abs(x[i]-x[j]), np.abs(y[i]-y[j])
+			d.append( max( dX, dY ) )
+		distances[i] = np.sort(d)[k]
+
+ 	nx = np.zeros(N)
+ 	ny = np.zeros(N)
+
+ 	for i in range(N):
+ 		nx[i] = np.sum( np.abs(x[i]-x) < distances[i] )
+ 		ny[i] = np.sum( np.abs(y[i]-y) < distances[i] )
+ 	I = digamma(k) - np.mean( digamma(nx) + digamma(ny)  ) + digamma(N)
+ 	return I
+
+def delayedKSGMI(x, y, k = 3, delay = 0):
 	'''
-	Description: Its the same as the python's zip method, but for lists of arrays.
+	Description: Computes the delayed mutual information using the KSG estimator (see method KSGestimator_Multivariate).
 	Inputs:
-
+	X: Array with the signals.
+	k: Number of nearest neighbors.
+	base: Log base (2 for unit bits)
+	delay: Delay applied
+	Output:
+	I / log(base): Mutual information (if base=2 in bits, if base=e in nats) 
 	'''
-	N = len(X[0])
-	C = len(X)
-	zipped = []
-	for i in range(N):
-		aux = []
-		for j in range(C):
-			aux.append(X[j][i][0])
-		zipped.append(aux)
-	return zipped
+	if delay == 0:
+		x = x
+		y = y
+	elif delay > 0:
+		x = x[:-delay]
+		y = y[delay:]
+	return KSGestimator_Multivariate(x, y, k = k)
