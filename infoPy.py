@@ -136,6 +136,89 @@ def binTransferEntropy(x, y, delay):
 					continue
 	return TE
 
+def KernelEstimatorMI(x, y, bw = 0.3, kernel = 'tophat', delay = 0, norm = True):
+	r'''
+	Description: Computes the mutual information between two signals x and y.
+	Inputs:
+	x: Signal x.
+	y: Signal y.
+	bw: bandwidth of the kernel estimator.
+	kernel: Kernel used in the KDE estimator ('gaussian', 'tophat', 'cosine'; see http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html)
+	delay: Delay applied between x and y, for the delayed mutual information
+	norm: Sets whether the data will be normalized or not.
+	Outputs:
+	MI: Returns the mutual information between x and y.
+	'''
+
+	# Normalizing data
+	if norm == True:
+		x = (x - np.mean(x))/np.std(x)
+		y = (y - np.mean(y))/np.std(y)
+
+	# Applying delays
+	if delay == 0:
+		x = x
+		y = y
+	elif delay > 0:
+		x = x[:-delay]
+		y = y[delay:]
+
+	N = len(x)
+
+	grid  = np.vstack([x, y])
+
+	pdf_x = kde_sklearn(x, grid[0], kernel = kernel, bandwidth=bw)
+	pdf_y = kde_sklearn(y, grid[1], kernel = kernel, bandwidth=bw)
+	pdf_xy = kde_estimator(y, x, grid[1], grid[0], kernel = kernel, bandwidth=bw)
+
+	MI = 0
+	count = 0
+	for i in range(len(pdf_x)):
+		if pdf_x[i] > 0.00001 and pdf_y[i] > 0.00001 and pdf_xy[i] > 0.00001:
+			MI += np.log2( pdf_xy[i] / ( pdf_x[i]*pdf_y[i] ) ) 
+			count += 1.0
+	return MI / float(len(pdf_x) )
+
+def KernelEstimatorTE(x, y, bw = 0.3, kernel = 'tophat', delay = 1, norm=True):
+	r'''
+	Description: Computes the transfer entropy between two signals x and y.
+	Inputs:
+	x: Signal x.
+	y: Signal y.
+	bw: bandwidth of the kernel estimator.
+	kernel: Kernel used in the KDE estimator ('gaussian', 'tophat', 'cosine'; see http://scikit-learn.org/stable/auto_examples/neighbors/plot_kde_1d.html)
+	delay: Delay applied between x and y, for the delayed transfer entropy
+	norm: Sets whether the data will be normalized or not.
+	Outputs:
+	TE: Returns the transfer entropy from x to y.
+	'''
+
+	# Normalizing data
+	if norm == True:
+		x = (x - np.mean(x))/np.std(x)
+		y = (y - np.mean(y))/np.std(y)
+
+	# Applying delays
+	y1 = y[delay:]
+	x = x[:-delay]
+	y = y[:-delay]
+
+	N = len(x)
+
+	grid  = np.vstack([x, y, y1])
+
+	pdf_y   = kde_sklearn(y, grid[1], kernel = kernel, bandwidth=bw)                                 # p(i_n)
+	pdf_xy  = kde_estimator(y, x, grid[1], grid[0], kernel = kernel, bandwidth=bw)                   # p(i_n, j_n)  
+	pdf_yy1 = kde_estimator(y1, y, grid[2], grid[1], kernel = kernel, bandwidth=bw)                  # p(i_n+1, i_n)
+	pdf_xyz = kde_estimator2(y1, y, x, grid[2], grid[1], grid[0], kernel = kernel, bandwidth=bw)     # p(i_n+1, i_n, j_n)
+	
+	TE = 0
+	count = 0
+	for i in range( len(pdf_y) ):
+		if pdf_y[i]>0.00001 and pdf_xy[i]>0.00001 and pdf_yy1[i]>0.00001 and pdf_xyz[i]>0.00001:
+			TE += np.log2( pdf_xyz[i]*pdf_y[i] / ( pdf_xy[i]*pdf_yy1[i] ) )
+			count += 1.0
+	return TE / float( len(pdf_y) )
 
 def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 	'''
@@ -163,7 +246,7 @@ def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 		x = (x - np.mean(x))/np.std(x)
 		y = (y - np.mean(y))/np.std(y)
 
-	Z = np.squeeze( zip(x[:, None],y[:, None]) )
+	Z = np.squeeze( zip(x[:, None], y[:, None]) )
 	nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree', metric='chebyshev').fit(Z)
 	distances, _ = nbrs.kneighbors(Z)
 	distances = distances[:, k]
@@ -177,7 +260,7 @@ def KSGestimator_Multivariate(x, y, k = 3, norm = True, noiseLevel = 1e-8):
  	I = digamma(k) - np.mean( digamma(nx) + digamma(ny)  ) + digamma(N)
  	return I
 
-def delayedKSGMI(x, y, k = 3, base = 2, delay = 0):
+def delayedKSGMI(x, y, k = 3, norm = True, noiseLevel = 1e-8, delay = 0):
 	'''
 	Description: Computes the delayed mutual information using the KSG estimator (see method KSGestimator_Multivariate).
 	Inputs:
@@ -194,20 +277,36 @@ def delayedKSGMI(x, y, k = 3, base = 2, delay = 0):
 	elif delay > 0:
 		x = x[:-delay]
 		y = y[delay:]
-	return KSGestimator_Multivariate(x, y, k = k)
+	return KSGestimator_Multivariate(x, y, k = k, norm = norm, noiseLevel = noiseLevel)
 
-r'''
-	MUTUAL INFORMATION (USING KSG ESTIMATOR) BETWEEN THE HEART FREQUENCY AND CHEST VOLUME
-'''
-# Read in the data
-rawData = pd.read_csv('data.txt', header = None, delimiter = ',')
-# As numpy array:
-# Heart rate is first column, and we restrict to the samples that Schreiber mentions (2350:3550)
-x = rawData[0].values # Extracts what Matlab does with 2350:3550 argument there.
-# Chest vol is second column
-y = rawData[1].values
-# bloodOx = data[2349:3550,2];
-bloodOx = rawData[2].values
-timeSteps = len(x);
+from sklearn.neighbors import KernelDensity
 
-I = KSGestimator_Multivariate(x, y, k = 4)
+def kde_sklearn(x, x_grid, bandwidth=0.2, **kwargs):
+    """Kernel Density Estimation with Scikit-learn"""
+    kde_skl = KernelDensity(bandwidth=bandwidth, **kwargs)
+    kde_skl.fit(x[:, np.newaxis])
+    # score_samples() returns the log-likelihood of the samples
+    log_pdf = kde_skl.score_samples(x_grid[:, np.newaxis])
+    return np.exp(log_pdf)
+
+def kde_estimator(x, y, x_grid, y_grid, bandwidth=0.2, **kwargs):
+    """Kernel Density Estimation with Scikit-learn"""
+    data       = np.concatenate( (x[:, None], y[:, None]) , axis = 1)
+    data_grid  = np.concatenate( (x_grid[:, None], y_grid[:, None]) , axis = 1)
+
+    kde_skl = KernelDensity(bandwidth=bandwidth, **kwargs)
+    kde_skl.fit(data)
+    # score_samples() returns the log-likelihood of the samples
+    log_pdf = kde_skl.score_samples(data_grid)
+    return np.exp(log_pdf)
+
+def kde_estimator2(x, y, z, x_grid, y_grid, z_grid, bandwidth=0.2, **kwargs):
+    """Kernel Density Estimation with Scikit-learn"""
+    data       = np.concatenate( (x[:, None], y[:, None], z[:, None]) , axis = 1)
+    data_grid  = np.concatenate( (x_grid[:, None], y_grid[:, None], z_grid[:, None]) , axis = 1)
+
+    kde_skl = KernelDensity(bandwidth=bandwidth, **kwargs)
+    kde_skl.fit(data)
+    # score_samples() returns the log-likelihood of the samples
+    log_pdf = kde_skl.score_samples(data_grid)
+    return np.exp(log_pdf)
