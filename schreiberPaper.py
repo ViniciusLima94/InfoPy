@@ -117,7 +117,7 @@ if __name__ == '__main__':
 			print 'Coupling = ' + str(coupling)
 			binMapValues = simulateMap(tentMap, coupling = coupling, M = M, Transient = T, T = T)
 
-			TEvalues = Parallel(n_jobs=4)( delayed(pairTE)(binMapValues, M, i) for i in range(1, M) )	
+			TEvalues = Parallel(n_jobs=40)( delayed(pairTE)(binMapValues, M, i) for i in range(1, M) )	
 			TEmean.append( np.mean(TEvalues) )
 			TEstd.append( np.std(TEvalues) / float( len(TEvalues)**0.5 ) )
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 	if exp == 'ulam':
 		def ulamMI(coupling):
 			print 'Coupling = ' + str(coupling)
-                        x1, x2 = simulateMap(ulamMap, coupling = coupling, M = M, Transient = Transient, T = T)
+                        x1, x2 = simulateMap(ulamMap, coupling = coupling, M = 100, Transient = 100000, T = 10000)
                         idx = np.arange(0, len(x1)+100, 100)
                         MI12 = KernelEstimatorMI(x1, x2, bw = 0.3, norm=False, delay = 1)
                         MI21 = KernelEstimatorMI(x2, x1, bw = 0.3, norm=False, delay = 1)
@@ -156,6 +156,26 @@ if __name__ == '__main__':
 		plt.ylim([0, 2.5])
 		plt.show()
 
+	if exp == 'ulam-data':
+
+		def ulamData(count):
+			print 'Coupling = ' + str(count)
+			data = np.loadtxt('ulam-data/ulam_'+str(count)+'.dat', delimiter=',')
+			MI12 =  0#KSGestimatorMI(data[:, 0], data[:, 1], k = 3, norm = False, noiseLevel = 1e-8)#KernelEstimatorMI(data[:, 0], data[:, 1], kernel = 'gaussian', bw = 0.3, norm=False, delay = 1)
+			MI21 =  0#KSGestimatorMI(data[:, 1], data[:, 0], k = 3, norm = False, noiseLevel = 1e-8)#KernelEstimatorMI(data[:, 1], data[:, 0], kernel = 'gaussian', bw = 0.3, norm=False, delay = 1)
+			TE12 =  KSGestimatorTE(data[:, 0], data[:, 1], k = 3, norm = False, noiseLevel = 1e-8)#KernelEstimatorTE(data[:, 0], data[:, 1], kernel = 'gaussian', bw = 0.3, norm=False) 
+			TE21 =  KSGestimatorTE(data[:, 1], data[:, 0], k = 3, norm = False, noiseLevel = 1e-8)#KernelEstimatorTE(data[:, 1], data[:, 0], kernel = 'gaussian', bw = 0.3, norm=False) 
+			return np.array([MI12, MI21, TE12, TE21])
+
+		couplings = np.arange(0, 1.02, 0.02)
+
+		data = np.squeeze( Parallel(n_jobs=40)( delayed(ulamData)(count) for count in range(0, 51) ) )
+
+		#plt.plot(couplings, data[:, 0], '--')
+		#plt.plot(couplings, data[:, 1], '--')
+		plt.plot(couplings, data[:, 2])
+		plt.plot(couplings, data[:, 3])
+
 	if exp == 'hb':
 		# Read in the data
 		rawData = pd.read_csv('data.txt', header = None, delimiter = ',')
@@ -169,10 +189,10 @@ if __name__ == '__main__':
 		TE21 = np.zeros(len(rs))
 		for i in range( len(rs) ):
 			print 'r = ' + str(rs[i])
-			MI12[i] = KernelEstimatorMI(x, y, bw = rs[i], delay = 1, norm=True) 
-			MI21[i] = KernelEstimatorMI(y, x, bw = rs[i], delay = 1, norm=True) 
-			TE12[i] = KernelEstimatorTE(x, y, bw = rs[i], kernel = 'gaussian', delay = 1, norm=True)
-			TE21[i] = KernelEstimatorTE(y, x, bw = rs[i], kernel = 'gaussian', delay = 1, norm=True)
+			MI12[i] = KernelEstimatorMI(x, y, bw = rs[i], kernel = 'gaussian', delay = 1, norm=True) 
+			MI21[i] = KernelEstimatorMI(y, x, bw = rs[i], kernel = 'gaussian', delay = 1, norm=True) 
+			TE12[i] = KernelEstimatorTE(x, y, bw = rs[i], kernel = 'gaussian', norm=True)
+			TE21[i] = KernelEstimatorTE(y, x, bw = rs[i], kernel = 'gaussian', norm=True)
 		plt.semilogx(rs, MI12, '--')
 		plt.semilogx(rs, MI21, '--')
 		plt.semilogx(rs, TE12)
@@ -181,3 +201,7 @@ if __name__ == '__main__':
 		plt.xlim([0.01, 1])
 		plt.ylim([0, 5])
 		plt.ylabel('TE')
+
+
+
+
