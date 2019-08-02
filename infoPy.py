@@ -286,19 +286,19 @@ def KSGestimatorMI(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 		x = (x - np.mean(x))/np.std(x)
 		y = (y - np.mean(y))/np.std(y)
 
-	Z = np.squeeze( zip(x[:, None], y[:, None]) )
+	Z = np.squeeze(np.array([x[:, None], y[:, None]]).T)
 	nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree', metric='chebyshev').fit(Z)
 	distances, _ = nbrs.kneighbors(Z)
 	distances = distances[:, k]
 
- 	nx = np.zeros(N)
- 	ny = np.zeros(N)
+	nx = np.zeros(N)
+	ny = np.zeros(N)
 
- 	for i in range(N):
- 		nx[i] = np.sum( np.abs(x[i]-x) < distances[i] )
- 		ny[i] = np.sum( np.abs(y[i]-y) < distances[i] )
- 	I = digamma(k) - np.mean( digamma(nx) + digamma(ny) ) + digamma(N)
- 	return I
+	for i in range(N):
+		nx[i] = np.sum( np.abs(x[i]-x) < distances[i] )
+		ny[i] = np.sum( np.abs(y[i]-y) < distances[i] )
+	I = digamma(k) - np.mean( digamma(nx) + digamma(ny) ) + digamma(N)
+	return I
 
 def KSGestimatorMImultivariate(X, k = 3, norm = True, noiseLevel = 1e-8):
 	'''
@@ -396,23 +396,23 @@ def KSGestimatorTE(x, y, k = 3, norm = True, noiseLevel = 1e-8):
 	N = len(x)
 
 	
-	Z = np.squeeze( zip(x[:, None], y[:, None], ym[:, None]) )
+	Z = np.squeeze( ZIP([x[:, None], y[:, None], ym[:, None]]) )
 	nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='ball_tree', metric='chebyshev').fit(Z)
 	distances, _ = nbrs.kneighbors(Z)
 	distances = distances[:, k]
 
- 	nx = np.zeros(N)
- 	ny = np.zeros(N)
- 	nym = np.zeros(N)
+	nx = np.zeros(N)
+	ny = np.zeros(N)
+	nym = np.zeros(N)
 
- 	for i in range(N):
- 		nx[i] = np.sum( np.sqrt( (y[i]-y)**2 + (x[i]-x)**2 ) < distances[i] )
- 		ny[i] = np.sum( np.sqrt( (y[i]-y)**2 + (ym[i]-ym)**2 ) < distances[i] )
- 		nym[i] = np.sum( np.abs(ym[i]-ym) < distances[i] )
- 		
- 	I = digamma(k) + np.mean( digamma(nym) - digamma(ny) - digamma(nx) )
- 	return I
- 	
+	for i in range(N):
+		nx[i] = np.sum( np.sqrt( (y[i]-y)**2 + (x[i]-x)**2 ) < distances[i] )
+		ny[i] = np.sum( np.sqrt( (y[i]-y)**2 + (ym[i]-ym)**2 ) < distances[i] )
+		nym[i] = np.sum( np.abs(ym[i]-ym) < distances[i] )
+		
+	I = digamma(k) + np.mean( digamma(nym) - digamma(ny) - digamma(nx) )
+	return I
+	
 
 ##################################################################################################
 # AUXILIARY FUNCTIONS                                                                            #
@@ -483,7 +483,7 @@ if sys.argv[-1] == 'ex':
 	for i in range(100):
 		MI.append( KSGestimatorMImultivariate(X, k = 4, norm = True, noiseLevel = 1e-8) )
 
-	print 'MI HEART;BREATH = ' + str( np.mean(MI) ) + ' nats'
+	print('MI HEART;BREATH = ' + str( np.mean(MI) ) + ' nats')
 
 	################################################################################
 	# MI GAUSSIAN SIGNALS CORRELATED                                               #
@@ -505,4 +505,4 @@ if sys.argv[-1] == 'ex':
 	MI = np.array(MI)
 	MImean = np.mean(MI[MI>0])
 	
-	print 'MI GAUSSIAN = ' + str(MImean) + ' nats'	
+	print('MI GAUSSIAN = ' + str(MImean) + ' nats')
