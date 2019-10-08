@@ -11,7 +11,7 @@ from sklearn.neighbors import NearestNeighbors
 
 def BinNeuronEntropy(SpikeTrain):
 	r'''
-	Description: Computes the entropy of a binary neuron (with a response consisting of 0s and 1s).
+	Description:   Computes the entropy of a binary neuron (with a response consisting of 0s and 1s).
 	Inputs:
 	SpikeTrain: Binary spike train of a neuron (must be composed of 0s and 1s)
 	Outputs:
