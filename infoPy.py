@@ -11,7 +11,7 @@ from sklearn.neighbors import NearestNeighbors
 
 def BinNeuronEntropy(SpikeTrain):
 	r'''
-	Description:   Computes the entropy of a binary neuron (with a response consisting of 0s and 1s).
+	Description: Computes the entropy of a binary neuron (with a response consisting of 0s and 1s).
 	Inputs:
 	SpikeTrain: Binary spike train of a neuron (must be composed of 0s and 1s)
 	Outputs:
@@ -22,6 +22,23 @@ def BinNeuronEntropy(SpikeTrain):
 	P_notfiring = 1.0 - P_firing # Pobability of silence (probability of the spike tain being 0)
 	# Computing and returning the entropy of the binary spike train
 	return -P_firing*np.log2(P_firing) - P_notfiring*np.log2(P_notfiring)
+
+def BinNeuronEntropy_2(Sx, Sy):
+	r'''
+	Description: Returns the joint entropy of the binary spike trains Sx and Sy.
+	Sx, Sy: Binary spike train of a neuron (must be composed of 0s and 1s)
+	Outputs:
+	Returns the joint entropy H(X,Y) of the binary spike train
+	'''
+	N = len(sX)   # Number of bins in the spike train
+	PXY = np.zeros([2,2])
+	for t in range(len(Sx)):
+		i, j     = Sx[t], Sy[t]
+		if i == 0 and j == 0:
+			continue
+		else:
+			PXY[i,j] += 1
+		PXY[0,0]
 
 
 def EntropyFromProbabilities(Prob):
