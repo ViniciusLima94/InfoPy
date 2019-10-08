@@ -30,7 +30,7 @@ def BinNeuronEntropy_2(Sx, Sy):
 	Outputs:
 	Returns the joint entropy H(X,Y) of the binary spike train
 	'''
-	N = len(sX)   # Number of bins in the spike train
+	N = len(Sx)   # Number of bins in the spike train
 	PXY = np.zeros([2,2])
 	for t in range(len(Sx)):
 		i, j     = Sx[t], Sy[t]
@@ -38,8 +38,60 @@ def BinNeuronEntropy_2(Sx, Sy):
 			continue
 		else:
 			PXY[i,j] += 1
-		PXY[0,0]
+	# Estimating [0, 0] pairs for the PXY matrix
+	PXY[0,0] = N - PXY.sum()
+	# Normalizing probabilities
+	PXY = PXY / N
+	# Computing joint entropy
+	HXY = 0
+	for p in PXY.flatten('C'):
+		if p > 0.00001:
+			HXY -= p*np.log2(p)
+		else:
+			continue
+	return HXY
 
+def BinNeuronEntropy_3(Sx, Sy, Sz):
+	r'''
+	Description: Returns the joint entropy of the binary spike trains Sx, Sy and Sy.
+	Sx, Sy, Sz: Binary spike train of a neuron (must be composed of 0s and 1s)
+	Outputs:
+	Returns the joint entropy H(X,Y) of the binary spike train
+	'''
+	N = len(Sx)   # Number of bins in the spike train
+	PXYZ = np.zeros([2,2,2])
+	for t in range(len(Sx)):
+		i, j, k = Sx[t], Sy[t], Sz[t]
+		if i == 0 and j == 0 and k == 0:
+			continue
+		else:
+			PXYZ[i,j,k] += 1
+	# Estimating [0, 0, 0] pairs for the PXYZ matrix
+	PXYZ[0,0,0] = N - PXYZ.sum()
+	# Normalizing probabilities
+	PXYZ = PXYZ / N
+	# Computing joint entropy
+	HXYZ = 0
+	for p in PXYZ.flatten('C'):
+		if p > 0.00001:
+			HXYZ -= p*np.log2(p)
+		else:
+			continue
+	return HXYZ
+
+def BinNeuronConditionalMI(Sx, Sy, Sz):
+	r'''
+	Description: Returns the conditional mutual information. Sx, SY conditioned in Sz.
+	Sx, Sy, Sz: Binary spike train of a neuron (must be composed of 0s and 1s)
+	Outputs:
+	Returns the joint entropy H(X,Y) of the binary spike train
+	'''
+	HXZ  = BinNeuronEntropy_2(Sx, Sz)
+	HYZ  = BinNeuronEntropy_2(Sy, Sz)
+	HXYZ = BinNeuronEntropy_3(Sx, Sy, Sz)
+	HZ   = BinNeuronEntropy(Sz)
+
+	return HXZ + HYZ - HXYZ - HZ
 
 def EntropyFromProbabilities(Prob):
 	r'''
