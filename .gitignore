@@ -1,0 +1,11 @@
+*.dat
+*.npy
+*.txt
+*.out
+*.err
+*.pdf
+*.png
+*.svg
+/__pycache__
+/out
+/err
