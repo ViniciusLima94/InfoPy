@@ -21,10 +21,10 @@ def ulamData_ksg(count):
 def ulamData_kernel(count):
 	print('Coupling = ' + str(count))
 	data = np.loadtxt('data_maps/ulam/ulam_'+str(count)+'.dat', delimiter=',')
-	MI12 =  KernelEstimatorMI(data[:, 0], data[:, 1], kernel = 'gaussian', bw = 0.2, norm=False, delay = 1)
-	MI21 =  KernelEstimatorMI(data[:, 1], data[:, 0], kernel = 'gaussian', bw = 0.2, norm=False, delay = 1)
-	TE12 =  KernelEstimatorTE(data[:, 0], data[:, 1], kernel = 'gaussian', bw = 0.2, norm=False) 
-	TE21 =  KernelEstimatorTE(data[:, 1], data[:, 0], kernel = 'gaussian', bw = 0.2, norm=False) 
+	MI12 =  KernelEstimatorMI(data[:, 0], data[:, 1], kernel = 'tophat', bw = 0.3, norm=False, delay = 1)
+	MI21 =  KernelEstimatorMI(data[:, 1], data[:, 0], kernel = 'tophat', bw = 0.3, norm=False, delay = 1)
+	TE21 =  KernelEstimatorTE(data[:, 0], data[:, 1], kernel = 'tophat', bw = 0.3, norm=False) 
+	TE12 =  KernelEstimatorTE(data[:, 1], data[:, 0], kernel = 'tophat', bw = 0.3, norm=False) 
 	return np.array([MI12, MI21, TE12, TE21])
 
 data_kernel = ulamData_kernel(idx)
