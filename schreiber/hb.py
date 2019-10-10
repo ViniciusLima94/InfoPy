@@ -1,10 +1,10 @@
 import sys
-sys.path.append('../lib')
+sys.path.append('../infoPy')
 
 import numpy as np 
 import matplotlib.pyplot as plt 
 import pandas as pd 
-from infoPy import *
+from kernel import *
 from tools import *
 
 # Read in the data

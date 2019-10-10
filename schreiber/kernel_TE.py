@@ -1,66 +1,57 @@
+import sys
+sys.path.append('../infoPy')
+
 import numpy             as np 
 import matplotlib.pyplot as plt
+import pandas            as pd
 from   sklearn.neighbors import KernelDensity
+from   kde               import *
 
-def heaviside(x):
-	if x <= 0:
-		return 1
-	else:
-		return 0
+def KernelEstimatorTE(x, y, bw = 0.3, norm=True):
 
-def pxy(x, y, r):
+	# Normalizing data
+	if norm == True:
+		x = (x - np.mean(x))/np.std(x)
+		y = (y - np.mean(y))/np.std(y)
 
-	X = np.vstack([x,y]).T
+	# Applying delays
+	x_t   = x[1:]
+	y_tm1 = y[0:-1]
+	x_tm1 = x[0:-1]
 
-	L = len(X)
+	grid = np.vstack([x_t,y_tm1,x_tm1]).T
 
-	xmin, xmax = x.min(), x.max()
-	ymin, ymax = y.min(), y.max()
-
-	N = 100
-
-	grid = np.vstack(map(np.ravel, np.meshgrid(np.linspace(xmin, xmax, N),
-                                               np.linspace(ymin, ymax, N)))).T
-
-	P = np.zeros(N**2)
-
-	for i in range(N**2):
-		for j in range(N):
-			aux  =  np.max( np.abs( grid[i,:]-X[j,:] ) ) - r
-			P[i] += (1/L)*heaviside(aux)
-
-def pxy(x, y, z, r):
-
-	X = np.vstack([x,y,z]).T
-
-	L = len(X)
-
-	xmin, xmax = x.min(), x.max()
-	ymin, ymax = y.min(), y.max()
-	zmin, zmax = y.min(), y.max()
-
-	N = 20
-
-	grid = np.vstack(map(np.ravel, np.meshgrid(np.linspace(xmin, xmax, N),
-                                               np.linspace(ymin, ymax, N),
-                                               np.linspace(zmin, zmax, N)))).T
-
-	Pxyz = np.zeros(N**3)
-
-	P = np.zeros(N**2)
-
-	for i in range(N**2):
-		for j in range(N):
-			aux  =  np.max( np.abs( grid[i,:]-X[j,:] ) ) - r
-			P[i] += (1/L)*heaviside(aux)
-
-	for i in range(N**3):
-		for j in range(N):
-			aux  =  np.max( np.abs( grid[i,:]-X[j,:] ) ) - r
-			Pxyz[i] += (1/L)*heaviside(aux)
+	pdf_x_t_x_tm1   = box_kernel(np.vstack([x_t, x_tm1]).T, np.vstack([x_t, x_tm1]).T, bw)                   # p(X_t, X_t-1)
+	pdf_y_tm1_x_tm1 = box_kernel(np.vstack([y_tm1, x_tm1]).T, np.vstack([y_tm1, x_tm1]).T, bw)               # p(Y_t-1, X_t-1)
+	pdf_x_t_y_tm1_x_tm1 = box_kernel(np.vstack([x_t, y_tm1, x_tm1]).T, np.vstack([x_t, y_tm1, x_tm1]).T, bw) # p(X_t, Y_t-1, X_t-1)
+	pdf_x_tm1           = box_kernel(x_tm1, x_tm1, bw)                                                       # p(X_t-1)
 
 
+	H_x_t_x_tm1   = 0
+	H_y_tm1_x_tm1 = 0
+	H_x_t_y_tm1_x_tm1 = 0
+	H_x_tm1           = 0
+	for i in range(grid.shape[0]):
+		if pdf_x_t_x_tm1[i] > 0:
+			H_x_t_x_tm1   -= np.log2(pdf_x_t_x_tm1[i])
 
-kde = KernelDensity(bandwidth=.3, kernel='tophat', metric='chebyshev')
-log_dens2 = kde.fit(X).score_samples(grid)
-dens2 = np.exp(log_dens2).reshape((N, N))
+		if pdf_y_tm1_x_tm1[i] > 0:
+			H_y_tm1_x_tm1 -= np.log2(pdf_y_tm1_x_tm1[i])
+
+		if pdf_x_t_y_tm1_x_tm1[i] > 0:
+			H_x_t_y_tm1_x_tm1 -= np.log2(pdf_x_t_y_tm1_x_tm1[i]) 
+
+		if pdf_x_tm1[i] > 0:
+			H_x_tm1           -= np.log2(pdf_x_tm1[i])
+
+	TE = ( H_x_t_x_tm1 + H_y_tm1_x_tm1 - H_x_t_y_tm1_x_tm1 - H_x_tm1 ) / grid.shape[0] 
+	return TE
+
+# Read in the data
+rawData = pd.read_csv('data.txt', header = None, delimiter = ',')
+x = rawData[0].values # Extracts what Matlab does with 2350:3550 argument there.
+# Chest vol is second column
+y = rawData[1].values
+
+TE12 = KernelEstimatorTE(y, x, bw = 0.032, norm=True)
+TE21 = KernelEstimatorTE(x, y, bw = 0.032, norm=True)
