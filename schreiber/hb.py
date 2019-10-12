@@ -8,7 +8,7 @@ from kernel import *
 from tools import *
 
 # Read in the data
-rawData = pd.read_csv('data.txt', header = None, delimiter = ',')
+rawData = pd.read_csv('data.dat', header = None, delimiter = ',')
 x = rawData[0].values # Extracts what Matlab does with 2350:3550 argument there.
 # Chest vol is second column
 y = rawData[1].values

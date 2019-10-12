@@ -10,8 +10,8 @@ TE21 = np.zeros(couplings.shape[0])
 
 for i in range(1,couplings.shape[0]+1):
 	data = np.load('data_maps/ulam/ulam_kernel_'+str(i)+'.npy').item()
-	MI12[i-1] = data['M12']
-	MI21[i-1] = data['M21']
+	#MI12[i-1] = data['M12']
+	#MI21[i-1] = data['M21']
 	TE12[i-1] = data['TE12']
 	TE21[i-1] = data['TE21']
 

@@ -11,13 +11,18 @@ def box_kernel(X, grid, r):
 				P[i] += 1 / N
 	return P
 
-def boxkernel(x_i, bandwidth):
+def uniform_pdf(x_i, bandwidth):
+    """Return uniform kernel density estimator."""
+    lowerb = (x_i - bandwidth)
+    upperb = (x_i + bandwidth)
     def evaluate(x):
         """Evaluate x."""
-        if  x<=0: pdf=1
-        elif x>0: pdf=0
+        if  x<=lowerb: pdf=0
+        elif x>upperb: pdf=0
+        else: pdf=(1/(2*bandwidth))
         return(pdf)
     return(evaluate)
+
 
 def kde_pdf(data, kernel_func, bandwidth):
     """Generate kernel density estimator over data."""
@@ -32,3 +37,5 @@ def kde_pdf(data, kernel_func, bandwidth):
         return(sum(pdfs)/n)
     return(evaluate)
 
+
+eval_kde = kde_pdf(data=vals, kernel_func=uniform_pdf, bandwidth=1)
