@@ -13,12 +13,12 @@ for i in range(couplings.shape[0]):
 	TEstd[i]  = data['TEstd']
 
 plt.figure()
+plt.plot( couplings, (0.77**2)*(couplings**2)/np.log(2), 'k--' )
 plt.errorbar(couplings, TEmean, TEstd)
 # Data generated with JIDT toolbox for comparation
-jidt = pd.read_csv('data_maps/tent/tentMap_jidt.dat', delimiter=',', header=None, names=['c', 'te', 'ste'])
-plt.errorbar(jidt['c'], jidt['te'], jidt['ste'])
+#jidt = pd.read_csv('data_maps/tent/tentMap_jidt.dat', delimiter=',', header=None, names=['c', 'te', 'ste'])
+#plt.errorbar(jidt['c'], jidt['te'], jidt['ste'])
 plt.title('Transfer Entropy for the Tent Map')
 plt.ylabel('TE [bits]')
 plt.xlabel(r'$\epsilon$')
-plt.legend(['InfoPy TE', 'JIDT TE'])
-plt.savefig('figures/TE_TENTMAP.pdf', dpi = 600)
+plt.savefig('figures/TE_TENTMAP.png', dpi = 600)
