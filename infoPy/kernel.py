@@ -131,13 +131,13 @@ def KernelEstimatorTE(X, Y, bw = 0.3, delay = 1, norm=True):
 ##################################################################################################
 # AUXILIARY FUNCTIONS                                                                            #
 ##################################################################################################
-
+'''
 def KernelDensityEstimator(X, d, bandwidth):
 	r'''
-		Computes the KDE for uni and multivariable, i'm using the algorithm by Lizier which uses
-		a java backend
-		Inputs:
-		X : Data matrix, must be Nobservations x Ndimensions
+		#Computes the KDE for uni and multivariable, i'm using the algorithm by Lizier which uses
+		#a java backend
+		#Inputs:
+		#X : Data matrix, must be Nobservations x Ndimensions
 	'''
 
 	jarLocation = os.path.join('infodynamics.jar')
@@ -161,9 +161,8 @@ def KernelDensityEstimator(X, d, bandwidth):
 		p = np.array( [kernel.getProbability(obs) for obs in X] )
 
 	return p
-
-
 '''
+
 def KernelDensityEstimator(X, d, bandwidth):
 	from sklearn.neighbors import KernelDensity
 
@@ -178,4 +177,31 @@ def KernelDensityEstimator(X, d, bandwidth):
 		p = kde.score_samples(X)
 	
 	return np.exp(p)
+
+
 '''
+def KernelDensityEstimator(X, d, bandwidth):
+
+	from scipy.stats import gaussian_kde 
+
+	kde = gaussian_kde(X, bandwidth)
+
+	return kde(X)
+'''
+
+'''
+def KernelDensityUniVariate(X, kernel, bandwidth):
+
+	from statsmodels.nonparametric.kde import KDEUnivariate
+
+	Nobs = len(X)
+
+	kde = KDEUnivariate(X)
+	kde.fit(kernel=kernel, bw=bandwidth, fft=True)
+
+	p = [kde.evaluate(X[i])[0] for i in range(Nobs)]
+
+	return p
+'''
+
+

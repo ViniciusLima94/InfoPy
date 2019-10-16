@@ -6,7 +6,7 @@
 *.pdf
 *.png
 *.svg
-kernel_density_test.py
+kernel_test.py
 /__pycache__
 /out
 /err

@@ -10,8 +10,8 @@ from   tools import *
 def ulamData_kernel(count):
 	print('Coupling = ' + str(count))
 	data = np.loadtxt('data_maps/ulam/ulam_'+str(count)+'.dat', delimiter=',')
-	MI12 =  KernelEstimatorDelayedMI(data[:, 0], data[:, 1], bw = 0.3, delay = 1, norm=False)
-	MI21 =  KernelEstimatorDelayedMI(data[:, 1], data[:, 0], bw = 0.3, delay = 1, norm=False)
+	MI12 =  0#KernelEstimatorDelayedMI(data[:, 0], data[:, 1], bw = 0.3, delay = 1, norm=False)
+	MI21 =  0#KernelEstimatorDelayedMI(data[:, 1], data[:, 0], bw = 0.3, delay = 1, norm=False)
 	TE12 =  KernelEstimatorTE(data[:, 0], data[:, 1], bw = 0.3, delay = 1, norm=False) 
 	TE21 =  KernelEstimatorTE(data[:, 1], data[:, 0], bw = 0.3, delay = 1, norm=False) 
 	return np.array([MI12, MI21, TE12, TE21])
